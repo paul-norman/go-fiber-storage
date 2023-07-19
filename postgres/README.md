@@ -38,7 +38,7 @@ Import the storage package:
 import "github.com/paul-norman/go-fiber-storage/postgres"
 ```
 
-You can use the following possibilities to create a storage:
+You can use the following possibilities to create a store *(defaults do not need to be included, just shown for illustrative purposes)*:
 
 ```go
 // Initialise default config
@@ -46,11 +46,27 @@ store1 := postgres.New()
 
 // Initialise custom config
 sessions := postgres.New(postgres.Config{
-	Db:          dbPool,
-	Table:       "general_store",
-	Reset:       false,
-	GCInterval:  10 * time.Second,
-	Prefix:      "session",
+	Host:       "127.0.0.1",
+	Port:       5432,
+	Database:   "general",
+	Table:      "general_store",
+	Reset:      false,
+	GCInterval: 10 * time.Second,
+	Namespace:  "sessions",
+})
+
+// Initialise custom config using connection string
+objects := postgres.New(postgres.Config{
+	ConnectionURI: "postgresql://<username>:<password>@<host>:<port>/<database>"
+	Table:         "general_store",
+	Namespace:     "objects",
+})
+
+// Initialise custom config using existing DB connection
+db, _ := sqlx.Open("postgres", "postgresql://<username>:<password>@<host>:<port>/<database>")
+names := postgres.New(postgres.Config{
+	DB:        db,
+	Namespace: "names",
 })
 ```
 
@@ -59,10 +75,10 @@ sessions := postgres.New(postgres.Config{
 ```go
 // Config defines the config for storage.
 type Config struct {
-	// DB pgxpool.Pool object will override connection uri and other connection fields
+	// DB sqlx.DB object will override connection uri and other connection fields
 	//
 	// Optional. Default is nil
-	DB *pgxpool.Pool
+	DB *sqlx.DB
 
 	// Connection string to use for DB. Will override all other authentication values if used
 	//
@@ -114,10 +130,10 @@ type Config struct {
 	// Optional. Default is 10 * time.Second
 	GCInterval time.Duration
 
-	// Prefix to allow different types of information in the same table (namespace)
+	// Namespace to allow different types of information in the same table
 	//
 	// Optional. Default is ""
-	Prefix string
+	Namespace string
 }
 ```
 

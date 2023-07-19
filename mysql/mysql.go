@@ -25,18 +25,25 @@ type Storage struct {
 	sqlGC		string
 }
 
+type Store struct {
+	Key			string	`db:"key"`
+	Value		[]byte	`db:"value"`
+	Namespace	string	`db:"namespace"`
+	Expiry		int64	`db:"expiry"`
+}
+
 var (
 	checkSchemaMsg = "The `value` row has an incorrect data type. " +
 		"It should be BLOB but is instead %s. This will cause encoding-related panics if the DB is not migrated (see https://github.com/gofiber/storage/blob/main/MIGRATE.md)."
 	dropQuery = "DROP TABLE IF EXISTS %s;"
 	initQuery = []string{
 		`CREATE TABLE IF NOT EXISTS %s ( 
-			key		VARCHAR(64) NOT NULL DEFAULT '', 
-			prefix	VARCHAR(64) NOT NULL DEFAULT '', 
-			value	BLOB NOT NULL, 
-			expiry	BIGINT NOT NULL DEFAULT '0', 
-			PRIMARY KEY (prefix, key)
-			INDEX prefix (prefix),
+			key			VARCHAR(64) NOT NULL DEFAULT '', 
+			namespace	VARCHAR(64) NOT NULL DEFAULT '', 
+			value		BLOB NOT NULL, 
+			expiry		BIGINT NOT NULL DEFAULT '0', 
+			PRIMARY KEY (namespace, key)
+			INDEX namespace (namespace),
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8;`,
 	}
 	checkSchemaQuery = `SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
@@ -57,9 +64,9 @@ func New(config ...Config) *Storage {
 		}
 
 		// Set options
-		db.SetMaxOpenConns(cfg.maxOpenConns)
-		db.SetMaxIdleConns(cfg.maxIdleConns)
-		db.SetConnMaxLifetime(cfg.connMaxLifetime)
+		db.SetMaxOpenConns(cfg.MaxOpenConns)
+		db.SetMaxIdleConns(cfg.MaxIdleConns)
+		db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 	}
 
 	// Ping database to ensure a connection has been made
@@ -90,11 +97,11 @@ func New(config ...Config) *Storage {
 		gcInterval:	cfg.GCInterval,
 		db:			db,
 		done:		make(chan struct{}),
-		sqlSelect:	fmt.Sprintf("SELECT value, expiry FROM %s WHERE key = ? AND prefix = ?;", cfg.Table),
-		sqlInsert:	fmt.Sprintf("INSERT INTO %s (key, value, expiry, prefix) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?, expiry = ?;", cfg.Table),
-		sqlDelete:	fmt.Sprintf("DELETE FROM %s WHERE key = ? AND prefix = ?;", cfg.Table),
-		sqlReset:	fmt.Sprintf("DELETE FROM %s WHERE prefix = ?;", cfg.Table),
-		sqlGC:		fmt.Sprintf("DELETE FROM %s WHERE prefix = ? AND expiry <= ? AND expiry != 0;", cfg.Table),
+		sqlSelect:	fmt.Sprintf("SELECT value, expiry FROM %s WHERE key = ? AND namespace = ?;", cfg.Table),
+		sqlInsert:	fmt.Sprintf("INSERT INTO %s (key, value, expiry, namespace) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?, expiry = ?;", cfg.Table),
+		sqlDelete:	fmt.Sprintf("DELETE FROM %s WHERE key = ? AND namespace = ?;", cfg.Table),
+		sqlReset:	fmt.Sprintf("DELETE FROM %s WHERE namespace = ?;", cfg.Table),
+		sqlGC:		fmt.Sprintf("DELETE FROM %s WHERE namespace = ? AND expiry <= ? AND expiry != 0;", cfg.Table),
 		namespace:	cfg.Namespace,
 	}
 
@@ -114,11 +121,8 @@ func (s *Storage) Get(key string) (any, error) {
 		return nil, errors.New("storage keys cannot be zero length")
 	}
 
-	row := s.db.QueryRow(s.sqlSelect, key, s.namespace)
-
-	data	:= []byte{}
-	exp		:= int64(0)
-	if err := row.Scan(&data, &exp); err != nil {
+	var store Store
+	if err := s.db.Get(&store, s.sqlSelect, key, s.namespace); err != nil {
 		if err == sqlx.ErrNoRows {
 			return nil, nil
 		}
@@ -126,12 +130,12 @@ func (s *Storage) Get(key string) (any, error) {
 	}
 
 	// If the expiration time has already passed, then return nil
-	if exp != 0 && exp <= time.Now().Unix() {
+	if store.Expiry != 0 && store.Expiry <= time.Now().Unix() {
 		return nil, nil
 	}
 
 	var decoded interface{}
-	err := json.Unmarshal(data, &decoded)
+	err := json.Unmarshal(store.Value, &decoded)
 
 	return decoded, err
 }

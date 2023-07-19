@@ -14,8 +14,8 @@ A Redis storage driver using [go-redis/redis](https://github.com/go-redis/redis)
 
 ```go
 func New(config ...Config) Storage
-func (s *Storage) Get(key string) ([]byte, error)
-func (s *Storage) Set(key string, val []byte, exp time.Duration) error
+func (s *Storage) Get(key string) (any, error)
+func (s *Storage) Set(key string, val any, exp time.Duration) error
 func (s *Storage) Delete(key string) error
 func (s *Storage) Reset() error
 func (s *Storage) Close() error
@@ -38,7 +38,7 @@ Import the storage package.
 import "github.com/paul-norman/go-fiber-storage/redis"
 ```
 
-You can use the following possibilities to create a storage:
+You can use the following possibilities to create a storage *(defaults do not need to be included, just shown for illustrative purposes)*:
 
 ```go
 // Initialise default config
@@ -58,10 +58,17 @@ sessions := redis.New(redis.Config{
 	Namespace: "sessions",
 })
 
-// or just the url with all information
+// Initialise custom config using connection string
+objects := redis.New(redis.Config{
+	ConnectionURI: "redis://<username>:<password>@<host>:<port>/<database>",
+	Reset:         false,
+	Namespace:     "objects",
+})
+
+// Initialise custom config using existing DB connection
+db := redisClient.NewUniversalClient(&redisClient.redis.UniversalOptions{ ... })
 names := redis.New(redis.Config{
-    URL:       "redis://<user>:<pass>@127.0.0.1:6379/<db>",
-    Reset:     false,
+	DB:        db,
 	Namespace: "names",
 })
 ```
@@ -69,6 +76,22 @@ names := redis.New(redis.Config{
 ### Config
 ```go
 type Config struct {
+	// DB object will override connection uri and other connection fields
+	//
+	// Optional. Default is nil
+	DB redis.UniversalClient
+
+	// The standard format redis url to parse all other options. If this is set all other config options, Host, Port, Username, Password, Database have no effect.
+	//
+	// Example: redis://<user>:<pass>@localhost:6379/<db>
+	// Optional. Default is ""
+	ConnectionURI string
+
+	// <Host>:<Port> pairs for connection
+	//
+	// Optional. Default is empty
+	Addresses []string
+
 	// Host name where the DB is hosted
 	//
 	// Optional. Default is "127.0.0.1"
@@ -126,15 +149,18 @@ type Config struct {
 
 ```go
 var ConfigDefault = Config{
-	Host:      "127.0.0.1",
-	Port:      6379,
-	Username:  "",
-	Password:  "",
-	URL:       "",
-	Database:  0,
-	Reset:     false,
-	TLSConfig: nil,
-	PoolSize:  10 * runtime.GOMAXPROCS(0),
-	Namespace: "",
+	DB:            nil,
+	ConnectionURI: "",
+	Addresses:     []string{},
+	Host:          "127.0.0.1",
+	Port:          6379,
+	Username:      "",
+	Password:      "",
+	URL:           "",
+	Database:      0,
+	Reset:         false,
+	TLSConfig:     nil,
+	PoolSize:      10 * runtime.GOMAXPROCS(0),
+	Namespace:     "",
 }
 ```

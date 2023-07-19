@@ -38,7 +38,7 @@ Import the storage package:
 import "github.com/paul-norman/go-fiber-storage/sqlite3"
 ```
 
-You can use the following possibilities to create a storage:
+You can use the following possibilities to create a store *(defaults do not need to be included, just shown for illustrative purposes)*:
 
 ```go
 // Initialise default config
@@ -53,7 +53,14 @@ sessions := sqlite3.New(sqlite3.Config{
 	MaxOpenConns:    100,
 	MaxIdleConns:    100,
 	ConnMaxLifetime: 1 * time.Second,
-	Prefix:          "sessions",
+	Namespace:       "sessions",
+})
+
+// Initialise custom config using existing DB connection
+db, _ := sqlx.Open("sqlite3", YourConfigStruct)
+names := sqlite3.New(sqlite3.Config{
+	DB:        db,
+	Namespace: "names",
 })
 ```
 
@@ -81,14 +88,10 @@ type Config struct {
 	// Optional. Default is 10 * time.Second
 	GCInterval time.Duration
 
-	// Prefix (folder) to store specific storage items
+	// Namespace to allow different types of information in the same table
 	//
 	// Optional. Default is ""
-	Prefix string
-
-	// //////////////////////////////////
-	// Adaptor related config options //
-	// //////////////////////////////////
+	Namespace string
 
 	// MaxIdleConns sets the maximum number of connections in the idle connection pool.
 	//

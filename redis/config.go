@@ -51,7 +51,7 @@ type Config struct {
 	// Optional. Default is 0
 	Database int
 
-	// Key prefix to allow different types of information in the same table
+	// Key prefix to allow different types of information in the same database
 	//
 	// Optional. Default is ""
 	Namespace string
@@ -68,12 +68,6 @@ type Config struct {
 	//
 	// Optional. Default is 10 connections per every available CPU as reported by runtime.GOMAXPROCS.
 	PoolSize int
-
-	////////////////////////////////////
-	// Adaptor related config options //
-	////////////////////////////////////
-
-	// https://pkg.go.dev/github.com/go-redis/redis/v8#Options
 }
 
 // ConfigDefault is the default config

@@ -38,7 +38,7 @@ Import the storage package:
 import "github.com/paul-norman/go-fiber-storage/mysql"
 ```
 
-You can use the following possibilities to create a storage:
+You can use the following possibilities to create a store *(defaults do not need to be included, just shown for illustrative purposes)*:
 
 ```go
 // Initialise default config
@@ -52,24 +52,21 @@ sessions := mysql.New(mysql.Config{
 	Table:      "general_store",
 	Reset:      false,
 	GCInterval: 10 * time.Second,
-	Prefix:     "sessions",
+	Namespace:  "sessions",
 })
 
 // Initialise custom config using connection string
 objects := mysql.New(mysql.Config{
-	ConnectionURI: "<username>:<pw>@tcp(<HOST>:<port>)/<dbname>"
-	Reset:         false,
-	GCInterval:    10 * time.Second,
-	Prefix:        "objects",
+	ConnectionURI: "<username>:<password>@tcp(<host>:<port>)/<database>"
+	Table:         "general_store",
+	Namespace:     "objects",
 })
 
-// Initialise custom config using sql db connection
-db, _ := sql.Open("mysql", "<username>:<pw>@tcp(<HOST>:<port>)/<dbname>")
+// Initialise custom config using existing DB connection
+db, _ := sqlx.Open("mysql", "<username>:<password>@tcp(<host>:<port>)/<database>")
 names := mysql.New(mysql.Config{
-	Db:         db,
-	Reset:      false,
-	GCInterval: 10 * time.Second,
-	Prefix:     "names",
+	DB:        db,
+	Namespace: "names",
 })
 ```
 
@@ -80,7 +77,7 @@ type Config struct {
 	// DB Will override ConnectionURI and all other authentication values if used
 	//
 	// Optional. Default is nil
-	Db *sql.DB
+	DB *sql.DB
 	
 	// Connection string to use for DB. Will override all other authentication values if used
 	//
@@ -127,10 +124,25 @@ type Config struct {
 	// Optional. Default is 10 * time.Second
 	GCInterval time.Duration
 
-	// Prefix to allow different types of information in the same table (namespace)
+	// Namespace to allow different types of information in the same table
 	//
 	// Optional. Default is ""
-	Prefix string
+	Namespace string
+
+	// MaxIdleConns sets the maximum number of connections in the idle connection pool.
+	//
+	// Optional. Default is 100.
+	MaxIdleConns int
+
+	// MaxOpenConns sets the maximum number of open connections to the database.
+	//
+	// Optional. Default is 100.
+	MaxOpenConns int
+
+	// ConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	//
+	// Optional. Default is 1 second.
+	ConnMaxLifetime time.Duration
 }
 ```
 

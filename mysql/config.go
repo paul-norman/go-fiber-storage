@@ -68,9 +68,20 @@ type Config struct {
 	// Adaptor related config options //
 	////////////////////////////////////
 
-	maxIdleConns    int
-	maxOpenConns    int
-	connMaxLifetime time.Duration
+	// MaxIdleConns sets the maximum number of connections in the idle connection pool.
+	//
+	// Optional. Default is 100.
+	MaxIdleConns int
+
+	// MaxOpenConns sets the maximum number of open connections to the database.
+	//
+	// Optional. Default is 100.
+	MaxOpenConns int
+
+	// ConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	//
+	// Optional. Default is 1 second.
+	ConnMaxLifetime time.Duration
 }
 
 // ConfigDefault is the default config
@@ -83,9 +94,9 @@ var ConfigDefault = Config{
 	Table:				"fiber_storage",
 	Reset:				false,
 	GCInterval:			10 * time.Second,
-	maxOpenConns:		100,
-	maxIdleConns:		100,
-	connMaxLifetime:	1 * time.Second,
+	MaxOpenConns:		100,
+	MaxIdleConns:		100,
+	ConnMaxLifetime:	1 * time.Second,
 	Namespace:			"",
 }
 
@@ -126,6 +137,18 @@ func configDefault(config ...Config) Config {
 
 	if int(cfg.GCInterval.Seconds()) <= 0 {
 		cfg.GCInterval = ConfigDefault.GCInterval
+	}
+
+	if cfg.MaxIdleConns <= 0 {
+		cfg.MaxIdleConns = ConfigDefault.MaxIdleConns
+	}
+
+	if cfg.MaxOpenConns <= 0 {
+		cfg.MaxOpenConns = ConfigDefault.MaxOpenConns
+	}
+
+	if cfg.ConnMaxLifetime == 0 {
+		cfg.ConnMaxLifetime = ConfigDefault.ConnMaxLifetime
 	}
 
 	return cfg
