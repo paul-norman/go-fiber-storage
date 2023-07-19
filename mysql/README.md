@@ -1,6 +1,6 @@
 # MySQL
 
-A MySQL storage driver using `database/sql` and [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql) which also supports prefixing (namespacing) to allow multiple storage spaces to run independently using the same table / connection pool.
+A MySQL storage driver for [Fiber](https://gofiber.io/) using [jmoiron/sqlx](https://jmoiron.github.io/sqlx/) + [go-sql-driver/mysql](https://github.com/go-sql-driver/mysql) which also supports prefixing (namespacing) to allow multiple storage spaces to run independently using the same table / connection pool.
 
 ### Table of Contents
 
@@ -77,7 +77,7 @@ type Config struct {
 	// DB Will override ConnectionURI and all other authentication values if used
 	//
 	// Optional. Default is nil
-	DB *sql.DB
+	DB *sqlx.DB
 	
 	// Connection string to use for DB. Will override all other authentication values if used
 	//

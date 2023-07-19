@@ -1,6 +1,6 @@
 # Redis
 
-A Redis storage driver using [go-redis/redis](https://github.com/go-redis/redis) which also supports namespacing to allow multiple storage spaces to run independently using the same connection pool.
+A Redis storage driver for [Fiber](https://gofiber.io/) using [go-redis/redis](https://github.com/go-redis/redis) which also supports namespacing to allow multiple storage spaces to run independently using the same connection pool.
 
 ### Table of Contents
 

@@ -5,7 +5,7 @@ title: Memcache
 
 # Memcache
 
-A Memcache storage driver using [`bradfitz/gomemcache`](https://github.com/bradfitz/gomemcache). No extra support is required for namespacing to allow multiple storage spaces to run independently, just create separate objects.
+A Memcache storage driver for [Fiber](https://gofiber.io/) using [`bradfitz/gomemcache`](https://github.com/bradfitz/gomemcache). No extra support is required for namespacing to allow multiple storage spaces to run independently, just create separate objects.
 
 ### Table of Contents
 

@@ -1,6 +1,6 @@
 # SQLite
 
-An SQLite3 storage driver using [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) which also supports namespacing to allow multiple storage spaces to run independently using the same table / connection pool.
+An SQLite3 storage driver for [Fiber](https://gofiber.io/) using [jmoiron/sqlx](https://jmoiron.github.io/sqlx/) + [mattn/go-sqlite3](https://github.com/mattn/go-sqlite3) which also supports namespacing to allow multiple storage spaces to run independently using the same table / connection pool.
 
 ### Table of Contents
 
@@ -68,6 +68,11 @@ names := sqlite3.New(sqlite3.Config{
 
 ```go
 type Config struct {
+	// DB Will override ConnectionURI and all other authentication values if used
+	//
+	// Optional. Default is nil
+	DB *sqlx.DB
+	
 	// Database name
 	//
 	// Optional. Default is "fiber"

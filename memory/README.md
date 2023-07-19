@@ -1,6 +1,6 @@
 # Memory
 
-An in-memory storage driver. No extra support is required for prefixing (namespacing) to allow multiple storage spaces to run independently, just create separate objects.
+An in-memory storage driver for [Fiber](https://gofiber.io/). No extra support is required for prefixing (namespacing) to allow multiple storage spaces to run independently, just create separate objects.
 
 ### Table of Contents
 

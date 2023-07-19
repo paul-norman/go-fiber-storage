@@ -1,6 +1,6 @@
 # Postgres
 
-A Postgres storage driver using [jackc/pgx](https://github.com/jackc/pgx) which also supports prefixing (namespacing) to allow multiple storage spaces to run independently using the same table / connection pool.
+A Postgres storage driver for [Fiber](https://gofiber.io/) using [jmoiron/sqlx](https://jmoiron.github.io/sqlx/) + [lib/pq](https://github.com/lib/pq) which also supports prefixing (namespacing) to allow multiple storage spaces to run independently using the same table / connection pool.
 
 ### Table of Contents
 

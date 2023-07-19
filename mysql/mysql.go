@@ -156,7 +156,7 @@ func (s *Storage) Set(key string, val any, exp time.Duration) error {
 		return err
 	}
 
-	_, err = s.db.Exec(s.sqlInsert, key, value, expSeconds, s.namespace, val, expSeconds)
+	_, err = s.db.Exec(s.sqlInsert, key, value, expSeconds, s.namespace, value, expSeconds)
 
 	return err
 }
