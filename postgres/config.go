@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
 )
 
 // Config defines the config for storage.
@@ -14,7 +14,7 @@ type Config struct {
 	// DB object will override connection uri and other connection fields
 	//
 	// Optional. Default is nil
-	DB *pgxpool.Pool
+	DB *sqlx.DB
 
 	// Connection string to use for DB. Will override all other authentication values if used
 	//
@@ -70,20 +70,42 @@ type Config struct {
 	//
 	// Optional. Default is ""
 	Namespace string
+
+	////////////////////////////////////
+	// Adaptor related config options //
+	////////////////////////////////////
+
+	// MaxIdleConns sets the maximum number of connections in the idle connection pool.
+	//
+	// Optional. Default is 100.
+	MaxIdleConns int
+
+	// MaxOpenConns sets the maximum number of open connections to the database.
+	//
+	// Optional. Default is 100.
+	MaxOpenConns int
+
+	// ConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	//
+	// Optional. Default is 1 second.
+	ConnMaxLifetime time.Duration
 }
 
 // ConfigDefault is the default config
 var ConfigDefault = Config{
-	DB: 			nil,
-	ConnectionURI:	"",
-	Host:			"127.0.0.1",
-	Port:			5432,
-	Database:		"fiber",
-	Table:			"fiber_storage",
-	SSLMode:		"disable",
-	Reset:			false,
-	GCInterval:		10 * time.Second,
-	Namespace:		"",
+	DB: 				nil,
+	ConnectionURI:		"",
+	Host:				"127.0.0.1",
+	Port:				5432,
+	Database:			"fiber",
+	Table:				"fiber_storage",
+	SSLMode:			"disable",
+	Reset:				false,
+	GCInterval:			10 * time.Second,
+	MaxOpenConns:		100,
+	MaxIdleConns:		100,
+	ConnMaxLifetime:	1 * time.Second,
+	Namespace:			"",
 }
 
 func (c *Config) getDSN() string {
@@ -147,6 +169,18 @@ func configDefault(config ...Config) Config {
 
 	if int(cfg.GCInterval.Seconds()) <= 0 {
 		cfg.GCInterval = ConfigDefault.GCInterval
+	}
+
+	if cfg.MaxIdleConns <= 0 {
+		cfg.MaxIdleConns = ConfigDefault.MaxIdleConns
+	}
+
+	if cfg.MaxOpenConns <= 0 {
+		cfg.MaxOpenConns = ConfigDefault.MaxOpenConns
+	}
+
+	if cfg.ConnMaxLifetime == 0 {
+		cfg.ConnMaxLifetime = ConfigDefault.ConnMaxLifetime
 	}
 
 	return cfg

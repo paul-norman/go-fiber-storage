@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/utils"
-	"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
 )
 
 var testStore = New(Config{
@@ -136,7 +136,7 @@ func Test_Postgres_GC(t *testing.T) {
 	testStore.gc(time.Now())
 	row := testStore.db.QueryRow(context.Background(), testStore.sqlSelect, "john")
 	err = row.Scan(nil, nil)
-	utils.AssertEqual(t, pgx.ErrNoRows, err)
+	utils.AssertEqual(t, sqlx.ErrNoRows, err)
 
 	// This key should not expire
 	err = testStore.Set("john", testVal, 0)
