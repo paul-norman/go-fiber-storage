@@ -114,7 +114,7 @@ func (s *Storage) Get(key string) (any, error) {
 
 	var store Store
 	if err := s.db.Get(&store, s.sqlSelect, key, s.namespace); err != nil {
-		if err == sqlx.ErrNoRows {
+		if len(store.Key) == 0 {
 			return nil, nil
 		}
 		return nil, err

@@ -120,7 +120,7 @@ func (s *Storage) Get(key string) (any, error) {
 
 	var store Store
 	if err := s.db.Get(&store, s.sqlSelect, key, s.namespace); err != nil {
-		if err == sqlx.ErrNoRows {
+		if len(store.Key) == 0 {
 			return nil, nil
 		}
 		return nil, err
@@ -179,10 +179,8 @@ func (s *Storage) Reset() error {
 // Close the database
 func (s *Storage) Close() error {
 	s.done <- struct{}{}
-	s.db.Stat()
-	s.db.Close()
 
-	return nil
+	return s.db.Close()
 }
 
 // Return database client
