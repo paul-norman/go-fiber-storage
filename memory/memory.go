@@ -44,9 +44,9 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) storage.Result {
+func (s *Storage) Get(key string) *storage.Result {
 	if len(key) <= 0 {
-		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
+		return &storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	s.mux.RLock()
@@ -54,10 +54,10 @@ func (s *Storage) Get(key string) storage.Result {
 	s.mux.RUnlock()
 
 	if !ok || v.expiry != 0 && v.expiry <= atomic.LoadUint32(&internal.Timestamp) {
-		return storage.Result{ Value: nil, Error: nil, Missed: true }
+		return &storage.Result{ Value: nil, Error: nil, Missed: true }
 	}
 
-	return storage.Result{ Value: v.data, Error: nil, Missed: false }
+	return &storage.Result{ Value: v.data, Error: nil, Missed: false }
 }
 
 // Set key with value

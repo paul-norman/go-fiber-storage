@@ -51,19 +51,19 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) storage.Result {
+func (s *Storage) Get(key string) *storage.Result {
 	if len(key) <= 0 {
-		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
+		return &storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	key = s.namespace + key
 
 	val, err := s.db.Get(context.Background(), key).Result()
 	if err == redis.Nil {
-		return storage.Result{ Value: nil, Error: nil, Missed: true }
+		return &storage.Result{ Value: nil, Error: nil, Missed: true }
 	}
 
-	return storage.Result{ Value: val, Error: err, Missed: false }
+	return &storage.Result{ Value: val, Error: err, Missed: false }
 }
 
 // Set key with value

@@ -57,20 +57,20 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) storage.Result {
+func (s *Storage) Get(key string) *storage.Result {
 	if len(key) <= 0 {
-		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
+		return &storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	item, err := s.db.Get(key)
 
 	if err == mc.ErrCacheMiss {
-		return storage.Result{ Value: nil, Error: nil, Missed: true }
+		return &storage.Result{ Value: nil, Error: nil, Missed: true }
 	} else if err != nil {
-		return storage.Result{ Value: nil, Error: err, Missed: false }
+		return &storage.Result{ Value: nil, Error: err, Missed: false }
 	}
 
-	return storage.Result{ Value: item.Value, Error: nil, Missed: false }
+	return &storage.Result{ Value: item.Value, Error: nil, Missed: false }
 }
 
 // Set key with value

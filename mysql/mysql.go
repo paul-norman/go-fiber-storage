@@ -117,24 +117,24 @@ func New(config ...Config) *Storage {
 var noRows = "sql: no rows in result set"
 
 // Get value by key
-func (s *Storage) Get(key string) storage.Result {
+func (s *Storage) Get(key string) *storage.Result {
 	if len(key) <= 0 {
-		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
+		return &storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	var store Store
 	if err := s.db.Get(&store, s.sqlSelect, key, s.namespace); err != nil {
-		return storage.Result{ Value: nil, Error: err, Missed: false }
+		return &storage.Result{ Value: nil, Error: err, Missed: false }
 	}
 
 	if len(store.Key) == 0 || (store.Expiry != 0 && store.Expiry <= time.Now().Unix()) {
-		return storage.Result{ Value: nil, Error: nil, Missed: true }
+		return &storage.Result{ Value: nil, Error: nil, Missed: true }
 	}
 
 	var decoded interface{}
 	err := json.Unmarshal(store.Value, &decoded)
 
-	return storage.Result{ Value: decoded, Error: err, Missed: false }
+	return &storage.Result{ Value: decoded, Error: err, Missed: false }
 }
 
 // Set key with value
