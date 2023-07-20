@@ -98,7 +98,7 @@ func New(config ...Config) *Storage {
 		gcInterval:	cfg.GCInterval,
 		db:			db,
 		done:		make(chan struct{}),
-		sqlSelect:	fmt.Sprintf("SELECT value, expiry FROM %s WHERE key = ? AND namespace = ?", cfg.Table),
+		sqlSelect:	fmt.Sprintf("SELECT key, value, expiry FROM %s WHERE key = ? AND namespace = ?", cfg.Table),
 		sqlInsert:	fmt.Sprintf("INSERT INTO %s (key, value, expiry, namespace) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE value = ?, expiry = ?", cfg.Table),
 		sqlDelete:	fmt.Sprintf("DELETE FROM %s WHERE namespace = ? AND key IN (?)", cfg.Table),
 		sqlReset:	fmt.Sprintf("DELETE FROM %s WHERE namespace = ?", cfg.Table),

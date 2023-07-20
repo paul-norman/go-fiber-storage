@@ -98,7 +98,7 @@ func New(config ...Config) *Storage {
 		gcInterval:	cfg.GCInterval,
 		done:		make(chan struct{}),
 		namespace:	cfg.Namespace,
-		sqlSelect:	fmt.Sprintf(`SELECT value, expiry FROM %s WHERE key = $1 AND namespace = $2`, cfg.Table),
+		sqlSelect:	fmt.Sprintf(`SELECT key, value, expiry FROM %s WHERE key = $1 AND namespace = $2`, cfg.Table),
 		sqlInsert:	fmt.Sprintf("INSERT INTO %s (key, value, expiry, namespace) VALUES ($1, $2, $3, $4) ON CONFLICT (key) DO UPDATE SET value = $5, expiry = $6", cfg.Table),
 		sqlDelete:	fmt.Sprintf("DELETE FROM %s WHERE namespace = ? AND key IN (?)", cfg.Table),
 		sqlReset:	fmt.Sprintf("DELETE FROM %s WHERE namespace = $1", cfg.Table),
