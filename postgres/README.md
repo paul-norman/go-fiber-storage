@@ -16,7 +16,7 @@ This **IS NOT** directly compatible with the standard storage drivers for Fiber,
 
 ```go
 func New(config ...Config) Storage
-func (s *Storage) Get(key string) Result
+func (s *Storage) Get(key string) *Result
 func (s *Storage) Set(key string, value any, expiry ...time.Duration) error
 func (s *Storage) Delete(keys ...string) error
 func (s *Storage) Reset() error

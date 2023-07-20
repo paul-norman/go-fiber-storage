@@ -9,7 +9,7 @@ These differ from the standard Fiber versions in that they allow any data type t
 type Storage interface {
 	// Get the value for the given key.
 	// A Result struct is returned allowing various extraction options.
-	Get(key string) Result
+	Get(key string) *Result
 
 	// Set the value for the given key along with an optional expiration value, 0 means no expiration.
 	// An empty key will flag an error, but empty values are allowed.
