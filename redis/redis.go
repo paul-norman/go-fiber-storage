@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/paul-norman/go-fiber-storage"
 	redis "github.com/redis/go-redis/v9"
 )
 
@@ -50,41 +51,52 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) (any, error) {
+func (s *Storage) Get(key string) storage.Result {
 	if len(key) <= 0 {
-		return nil, errors.New("storage keys cannot be zero length")
+		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	key = s.namespace + key
 
 	val, err := s.db.Get(context.Background(), key).Result()
 	if err == redis.Nil {
-		return nil, nil
+		return storage.Result{ Value: nil, Error: nil, Missed: true }
 	}
 
-	return val, err
+	return storage.Result{ Value: val, Error: err, Missed: false }
 }
 
 // Set key with value
-func (s *Storage) Set(key string, val any, exp time.Duration) error {
+func (s *Storage) Set(key string, value any, expiry ...time.Duration) error {
 	if len(key) <= 0 {
 		return errors.New("storage keys cannot be zero length")
 	}
 
+	var exp time.Duration = 0
+	if len(expiry) > 0 {
+		exp = expiry[0]
+	}
+
 	key = s.namespace + key
 
-	return s.db.Set(context.Background(), key, val, exp).Err()
+	return s.db.Set(context.Background(), key, value, exp).Err()
 }
 
-// Delete entry by key
-func (s *Storage) Delete(key string) error {
-	if len(key) <= 0 {
-		return errors.New("storage keys cannot be zero length")
+// Delete entries by key
+func (s *Storage) Delete(keys ...string) error {
+	if len(keys) <= 0 {
+		return errors.New("at least one key is required for Delete")
 	}
 
-	key = s.namespace + key
+	for k, v := range keys {
+		if len(v) == 0 {
+			return errors.New("storage keys cannot be zero length (no keys deleted)")
+		}
+		v = s.namespace + v
+		keys[k] = v
+	}
 	
-	return s.db.Del(context.Background(), key).Err()
+	return s.db.Del(context.Background(), keys...).Err()
 }
 
 // Reset all entries in the namespace

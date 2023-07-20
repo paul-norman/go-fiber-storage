@@ -6,18 +6,19 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/paul-norman/go-fiber-storage"
 	"github.com/paul-norman/go-fiber-storage/memory/internal"
 )
 
 // Storage interface that is implemented by storage providers
 type Storage struct {
 	mux			sync.RWMutex
-	db			map[string]entry
+	db			map[string]Entry
 	gcInterval	time.Duration
 	done		chan struct{}
 }
 
-type entry struct {
+type Entry struct {
 	data any
 	// max value is 4294967295 -> Sun Feb 07 2106 06:28:15 GMT+0000
 	expiry uint32
@@ -30,7 +31,7 @@ func New(config ...Config) *Storage {
 
 	// Create storage
 	store := &Storage{
-		db:			make(map[string]entry),
+		db:			make(map[string]Entry),
 		gcInterval:	cfg.GCInterval,
 		done:		make(chan struct{}),
 	}
@@ -43,9 +44,9 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) (any, error) {
+func (s *Storage) Get(key string) storage.Result {
 	if len(key) <= 0 {
-		return nil, errors.New("storage keys cannot be zero length")
+		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	s.mux.RLock()
@@ -53,16 +54,21 @@ func (s *Storage) Get(key string) (any, error) {
 	s.mux.RUnlock()
 
 	if !ok || v.expiry != 0 && v.expiry <= atomic.LoadUint32(&internal.Timestamp) {
-		return nil, nil
+		return storage.Result{ Value: nil, Error: nil, Missed: true }
 	}
 
-	return v.data, nil
+	return storage.Result{ Value: v.data, Error: nil, Missed: false }
 }
 
 // Set key with value
-func (s *Storage) Set(key string, val any, exp time.Duration) error {
+func (s *Storage) Set(key string, value any, expiry ...time.Duration) error {
 	if len(key) <= 0 {
 		return errors.New("storage keys cannot be zero length")
+	}
+
+	var exp time.Duration = 0
+	if len(expiry) > 0 {
+		exp = expiry[0]
 	}
 
 	var expire uint32
@@ -70,23 +76,31 @@ func (s *Storage) Set(key string, val any, exp time.Duration) error {
 		expire = uint32(exp.Seconds()) + atomic.LoadUint32(&internal.Timestamp)
 	}
 
-	e := entry{ val, expire }
+	entry := Entry{ value, expire }
 
 	s.mux.Lock()
-	s.db[key] = e
+	s.db[key] = entry
 	s.mux.Unlock()
 
 	return nil
 }
 
-// Delete key by key
-func (s *Storage) Delete(key string) error {
-	if len(key) <= 0 {
-		return errors.New("storage keys cannot be zero length")
+// Delete entries by key
+func (s *Storage) Delete(keys ...string) error {
+	if len(keys) <= 0 {
+		return errors.New("at least one key is required for Delete")
+	}
+	
+	for _, v := range keys {
+		if len(v) == 0 {
+			return errors.New("storage keys cannot be zero length (no keys deleted)")
+		}
 	}
 
 	s.mux.Lock()
-	delete(s.db, key)
+	for _, v := range keys {
+		delete(s.db, v)
+	}
 	s.mux.Unlock()
 
 	return nil
@@ -94,7 +108,7 @@ func (s *Storage) Delete(key string) error {
 
 // Reset all keys
 func (s *Storage) Reset() error {
-	ndb := make(map[string]entry)
+	ndb := make(map[string]Entry)
 
 	s.mux.Lock()
 	s.db = ndb

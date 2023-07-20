@@ -4,21 +4,21 @@ import "time"
 
 // Storage interface for communicating with different database/key-value providers
 type Storage interface {
-	// Get gets the value for the given key.
-	// `nil, nil` is returned when the key does not exist.
-	Get(key string) (any, error)
+	// Get the value for the given key.
+	// A Result struct is returned allowing various extraction options.
+	Get(key string) Result
 
-	// Set stores the given value for the given key along with an expiration value, 0 means no expiration.
+	// Set the value for the given key along with an optional expiration value, 0 means no expiration.
 	// An empty key will flag an error, but empty values are allowed.
-	Set(key string, val any, exp time.Duration) error
+	Set(key string, val any, expiry ...time.Duration) error
 
-	// Delete deletes the value for the given key.
-	// It returns no error if the storage does not contain the key.
-	Delete(key string) error
+	// Deletes the values for the given keys.
+	// It returns no error if the storage does not contain the keys.
+	Delete(key ...string) error
 
-	// Reset deletes all keys for the specified namespace.
+	// Removes all keys for the specified namespace.
 	Reset() error
 
-	// Close closes the storage and will stop any running garbage collectors and open connections.
+	// Close the storage, stop any running garbage collectors and closes open connections.
 	Close() error
 }

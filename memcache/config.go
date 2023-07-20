@@ -18,7 +18,7 @@ type Config struct {
 	// The socket read/write timeout.
 	//
 	// Optional. Default is 100 * time.Millisecond
-	timeout time.Duration
+	Timeout time.Duration
 
 	// The maximum number of idle connections that will be maintained per address.
 	//
@@ -26,14 +26,14 @@ type Config struct {
 	// be set to a number higher than your peak parallel requests.
 	//
 	// Optional. Default is 2
-	maxIdleConns int
+	MaxIdleConns int
 }
 
 // ConfigDefault is the default config
 var ConfigDefault = Config{
 	Servers:      "127.0.0.1:11211",
-	timeout:      100 * time.Millisecond,
-	maxIdleConns: 2,
+	Timeout:      100 * time.Millisecond,
+	MaxIdleConns: 2,
 }
 
 // Helper function to set default values

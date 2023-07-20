@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/paul-norman/go-fiber-storage"
 	"github.com/goccy/go-json"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -95,7 +96,7 @@ func New(config ...Config) *Storage {
 		done:		make(chan struct{}),
 		sqlSelect:	fmt.Sprintf(`SELECT value, expiry FROM %s WHERE key = ? AND namespace = ?`, cfg.Table),
 		sqlInsert:	fmt.Sprintf("INSERT INTO %s (key, value, expiry, namespace) VALUES (?, ?, ?, ?)", cfg.Table),
-		sqlDelete:	fmt.Sprintf("DELETE FROM %s WHERE key = ? AND namespace = ?", cfg.Table),
+		sqlDelete:	fmt.Sprintf("DELETE FROM %s WHERE namespace = ? AND key IN (?)", cfg.Table),
 		sqlReset:	fmt.Sprintf("DELETE FROM %s WHERE namespace = ?", cfg.Table),
 		sqlGC:		fmt.Sprintf("DELETE FROM %s WHERE namespace = ? AND expiry <= ? AND expiry != 0", cfg.Table),
 	}
@@ -107,34 +108,34 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) (any, error) {
+func (s *Storage) Get(key string) storage.Result {
 	if len(key) <= 0 {
-		return nil, errors.New("storage keys cannot be zero length")
+		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	var store Store
 	if err := s.db.Get(&store, s.sqlSelect, key, s.namespace); err != nil {
-		if len(store.Key) == 0 {
-			return nil, nil
-		}
-		return nil, err
+		return storage.Result{ Value: nil, Error: err, Missed: false }
 	}
-
-	// If the expiration time has already passed, then return nil
-	if store.Expiry != 0 && store.Expiry <= time.Now().Unix() {
-		return nil, nil
+	if len(store.Key) == 0 || (store.Expiry != 0 && store.Expiry <= time.Now().Unix()) {
+		return storage.Result{ Value: nil, Error: nil, Missed: true }
 	}
 
 	var decoded interface{}
 	err := json.Unmarshal(store.Value, &decoded)
 
-	return decoded, err
+	return storage.Result{ Value: decoded, Error: err, Missed: false }
 }
 
 // Set key with value
-func (s *Storage) Set(key string, val any, exp time.Duration) error {
+func (s *Storage) Set(key string, value any, expiry ...time.Duration) error {
 	if len(key) <= 0 {
 		return errors.New("storage keys cannot be zero length")
+	}
+
+	var exp time.Duration = 0
+	if len(expiry) > 0 {
+		exp = expiry[0]
 	}
 
 	expSeconds := int64(0)
@@ -142,23 +143,35 @@ func (s *Storage) Set(key string, val any, exp time.Duration) error {
 		expSeconds = time.Now().Add(exp).Unix()
 	}
 
-	value, err := json.Marshal(val)
+	val, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.db.Exec(s.sqlInsert, key, value, expSeconds, s.namespace)
+	_, err = s.db.Exec(s.sqlInsert, key, val, expSeconds, s.namespace)
 
 	return err
 }
 
-// Delete entry by key
-func (s *Storage) Delete(key string) error {
-	if len(key) <= 0 {
-		return errors.New("storage keys cannot be zero length")
+// Delete entries by key
+func (s *Storage) Delete(keys ...string) error {
+	if len(keys) <= 0 {
+		return errors.New("at least one key is required for Delete")
+	}
+	
+	for _, v := range keys {
+		if len(v) == 0 {
+			return errors.New("storage keys cannot be zero length (no keys deleted)")
+		}
 	}
 
-	_, err := s.db.Exec(s.sqlDelete, key, s.namespace)
+	query, args, err := sqlx.In(s.sqlDelete, s.namespace, keys)
+	if err != nil {
+		return errors.New("storage keys could not be bound (no keys deleted)")
+	}
+
+	query = s.db.Rebind(query)
+	_, err = s.db.Exec(query, args...)
 
 	return err
 }

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/paul-norman/go-fiber-storage"
 	mc "github.com/bradfitz/gomemcache/memcache"
 	"github.com/gofiber/utils"
 )
@@ -28,8 +29,8 @@ func New(config ...Config) *Storage {
 	db := mc.New(serverList...)
 
 	// Set options
-	db.Timeout = cfg.timeout
-	db.MaxIdleConns = cfg.maxIdleConns
+	db.Timeout		= cfg.Timeout
+	db.MaxIdleConns = cfg.MaxIdleConns
 
 	// Ping database to ensure a connection has been made
 	if err := db.Ping(); err != nil {
@@ -56,31 +57,36 @@ func New(config ...Config) *Storage {
 }
 
 // Get value by key
-func (s *Storage) Get(key string) (any, error) {
+func (s *Storage) Get(key string) storage.Result {
 	if len(key) <= 0 {
-		return nil, errors.New("storage keys cannot be zero length")
+		return storage.Result{ Value: nil, Error: errors.New("storage keys cannot be zero length"), Missed: false }
 	}
 
 	item, err := s.db.Get(key)
 
 	if err == mc.ErrCacheMiss {
-		return nil, nil
+		return storage.Result{ Value: nil, Error: nil, Missed: true }
 	} else if err != nil {
-		return nil, err
+		return storage.Result{ Value: nil, Error: err, Missed: false }
 	}
 
-	return item.Value, nil
+	return storage.Result{ Value: item.Value, Error: nil, Missed: false }
 }
 
 // Set key with value
-func (s *Storage) Set(key string, val any, exp time.Duration) error {
+func (s *Storage) Set(key string, value any, expiry ...time.Duration) error {
 	if len(key) <= 0 {
 		return errors.New("storage keys cannot be zero length")
 	}
 
+	var exp time.Duration = 0
+	if len(expiry) > 0 {
+		exp = expiry[0]
+	}
+
 	item := s.acquireItem()
-	item.Key = key
-	item.Value = val
+	item.Key		= key
+	item.Value		= value
 	item.Expiration = int32(exp.Seconds())
 
 	err := s.db.Set(item)
@@ -90,13 +96,23 @@ func (s *Storage) Set(key string, val any, exp time.Duration) error {
 	return err
 }
 
-// Delete entry by key
-func (s *Storage) Delete(key string) error {
-	if len(key) <= 0 {
-		return errors.New("storage keys cannot be zero length")
+// Delete entries by key
+func (s *Storage) Delete(keys ...string) error {
+	if len(keys) <= 0 {
+		return errors.New("at least one key is required for Delete")
+	}
+	
+	for _, v := range keys {
+		if len(v) == 0 {
+			return errors.New("storage keys cannot be zero length (no keys deleted)")
+		}
 	}
 
-	return s.db.Delete(key)
+	for _, v := range keys {
+		s.db.Delete(v)
+	}
+
+	return nil // TODO - This is bad, should combine any errors
 }
 
 // Reset all keys
